@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Renal Function Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --item-h: 45px;
+            --container-h: 180px;
+            --offset: 67.5px;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: 'Kanit', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 12px;
+        }
+        .glass-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+        }
+        .picker-container {
+            height: var(--container-h);
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            position: relative;
+            background: #f0f5fa;
+            border-radius: 12px;
+            touch-action: pan-y;
+            mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+        }
+        .picker-container::-webkit-scrollbar { display: none; }
+        
+        .picker-item {
+            height: var(--item-h);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: center;
+            font-size: 1.1rem;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+        }
+        .picker-item.selected {
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        .picker-highlight {
+            position: absolute;
+            top: var(--offset);
+            left: 3%;
+            right: 3%;
+            height: var(--item-h);
+            background: rgba(37, 99, 235, 0.08);
+            border-top: 1.5px solid rgba(37, 99, 235, 0.2);
+            border-bottom: 1.5px solid rgba(37, 99, 235, 0.2);
+            pointer-events: none;
+            z-index: 10;
+            border-radius: 8px;
+        }
+        .value-display-input {
+            width: 100%;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            text-align: center;
+            padding: 8px 0;
+            background: #eff6ff;
+            border-radius: 12px;
+            margin-top: 6px;
+            border: 2px solid #3b82f6;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .value-display-input:focus {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .gender-btn {
+            flex: 1;
+            padding: 10px 0;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .gender-btn.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .gender-btn.inactive {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+        .result-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header class="text-center py-2 flex-none">
+            <h1 class="text-[28px] font-bold text-blue-600 leading-tight">Renal Function</h1>
+            <p class="text-slate-400 text-[10px] tracking-[0.2em] uppercase font-medium">Rx Calculator</p>
+        </header>
+
+        <div class="glass-card p-1.5 mb-2 flex-none">
+            <div class="flex gap-2">
+                <button onclick="setGender('male')" id="btn-male" class="gender-btn active">Male</button>
+                <button onclick="setGender('female')" id="btn-female" class="gender-btn inactive">Female</button>
+            </div>
+        </div>
+
+        <div class="flex gap-2 flex-none mb-4">
+            <div class="flex-[0.7] flex flex-col">
+                <div class="text-[16px] font-bold text-slate-500 text-center mb-1">Age (Yr)</div>
+                <div class="glass-card p-1 relative overflow-hidden">
+                    <div class="picker-highlight"></div>
+                    <div class="picker-container" id="picker-age-int">
+                        <div class="picker-content" id="content-age-int"></div>
+                    </div>
+                </div>
+                <input type="number" id="val-age" class="value-display-input" value="60" 
+                       inputmode="numeric" pattern="[0-9]*"
+                       onchange="inputToPicker('age', this.value)">
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                <div class="text-[16px] font-bold text-slate-500 text-center mb-1">Weight (Kg)</div>
+                <div class="glass-card p-1 relative overflow-hidden">
+                    <div class="picker-highlight"></div>
+                    <div class="flex gap-0.5">
+                        <div class="flex-[1.5] picker-container" id="picker-w-int">
+                            <div class="picker-content" id="content-w-int"></div>
+                        </div>
+                        <div class="flex-1 picker-container" id="picker-w-dec">
+                            <div class="picker-content" id="content-w-dec"></div>
+                        </div>
+                    </div>
+                </div>
+                <input type="number" id="val-weight" step="0.1" class="value-display-input" value="60.0" 
+                       inputmode="decimal"
+                       onchange="inputToPicker('weight', this.value)">
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                <div class="text-[16px] font-bold text-slate-500 text-center mb-1">SCr (mg/dL)</div>
+                <div class="glass-card p-1 relative overflow-hidden">
+                    <div class="picker-highlight"></div>
+                    <div class="flex gap-0.5">
+                        <div class="flex-[1.2] picker-container" id="picker-s-int">
+                            <div class="picker-content" id="content-s-int"></div>
+                        </div>
+                        <div class="flex-1 picker-container" id="picker-s-dec">
+                            <div class="picker-content" id="content-s-dec"></div>
+                        </div>
+                    </div>
+                </div>
+                <input type="number" id="val-scr" step="0.01" class="value-display-input" value="1.00" 
+                       inputmode="decimal"
+                       onchange="inputToPicker('scr', this.value)">
+            </div>
+        </div>
+
+        <div id="results-container" class="flex gap-2 flex-none">
+            <div id="crcl-box" class="result-card flex-1 rounded-[22px] p-3 shadow-md border-2">
+                <p class="text-[16px] font-extrabold opacity-70">CrCl</p>
+                <span id="result-crcl" class="text-3xl font-black tracking-tighter">--</span>
+                <p class="text-[10px] font-medium opacity-80">ml/min</p>
+            </div>
+
+            <div id="egfr-box" class="result-card flex-1 rounded-[22px] p-3 shadow-md border-2">
+                <p class="text-[16px] font-extrabold opacity-70">eGFR</p>
+                <span id="result-egfr" class="text-3xl font-black tracking-tighter">--</span>
+                <p class="text-[10px] font-medium opacity-80">ml/min/1.73m²</p>
+            </div>
+
+            <div id="stage-box" class="result-card flex-1 rounded-[22px] p-3 shadow-md border-2">
+                <p class="text-[16px] font-extrabold opacity-70">Stage</p>
+                <span id="stage-text" class="text-3xl font-black tracking-tighter">--</span>
+                <p id="stage-desc" class="text-[10px] font-bold truncate w-full px-1">Wait...</p>
+            </div>
+        </div>
+
+        <div class="flex-none mt-4">
+            <div class="px-4 py-2 text-[9px] text-slate-400 bg-slate-50/50 rounded-xl border border-slate-100 mb-2">
+                <p class="font-bold text-slate-500 mb-0.5">Reference:</p>
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li>CrCl: Cockcroft-Gault Equation</li>
+                    <li>eGFR: CKD-EPI Creatinine Equation (2021)</li>
+                </ul>
+            </div>
+            
+            <footer class="text-center pt-2 pb-4">
+                <p class="text-slate-500 text-[10px] font-semibold uppercase tracking-wider">ภก.วิจักขณ์ พลอินทร์</p>
+                <p class="text-slate-400 text-[9px]">โรงพยาบาลรัษฎา จ.ตรัง</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        let gender = 'male';
+        let ageInt = 60, wInt = 60, wDec = 0, sInt = 1, sDec = 0;
+        const ITEM_H = 45; 
+        const OFFSET = 67.5; 
+        const pickers = {};
+
+        function init() {
+            setup('age', 'content-age-int', 1, 120, 60, v => { ageInt = v; calc(); updateDisplay('age'); });
+            setup('w-int', 'content-w-int', 1, 200, 60, v => { wInt = v; calc(); updateDisplay('weight'); });
+            setup('w-dec', 'content-w-dec', 0, 9, 0, v => { wDec = v; calc(); updateDisplay('weight'); });
+            setup('s-int', 'content-s-int', 0, 15, 1, v => { sInt = v; calc(); updateDisplay('scr'); });
+            setup('s-dec', 'content-s-dec', 0, 99, 0, v => { sDec = v; calc(); updateDisplay('scr'); });
+            calc();
+        }
+
+        function setup(key, id, min, max, initVal, cb) {
+            const el = document.getElementById(id);
+            const wrap = el.parentElement;
+            const count = max - min + 1;
+            pickers[key] = { wrap, min, max, count };
+
+            let h = "";
+            for (let s = 0; s < 5; s++) {
+                for (let i = min; i <= max; i++) {
+                    let txt = (id.includes('s-dec') && i < 10) ? '0'+i : i;
+                    h += `<div class="picker-item" data-v="${i}">${txt}</div>`;
+                }
+            }
+            el.innerHTML = h;
+
+            const handleScroll = () => {
+                const totalH = count * ITEM_H;
+                if (wrap.scrollTop < totalH) wrap.scrollTop += totalH * 2;
+                if (wrap.scrollTop > totalH * 3) wrap.scrollTop -= totalH * 2;
+
+                const idx = Math.round((wrap.scrollTop + OFFSET) / ITEM_H);
+                el.querySelectorAll('.picker-item').forEach((item, i) => {
+                    if (i === idx) {
+                        if (!item.classList.contains('selected')) {
+                            item.classList.add('selected');
+                            cb(parseInt(item.dataset.v));
+                        }
+                    } else item.classList.remove('selected');
+                });
+            };
+
+            wrap.onscroll = handleScroll;
+            let isScrolling;
+            wrap.addEventListener('scroll', () => {
+                window.clearTimeout(isScrolling);
+                isScrolling = setTimeout(() => {
+                    wrap.scrollTo({ top: Math.round((wrap.scrollTop + OFFSET) / ITEM_H) * ITEM_H - OFFSET, behavior: 'smooth' });
+                }, 100);
+            });
+
+            setTimeout(() => {
+                wrap.scrollTop = ((initVal - min) + (count * 2)) * ITEM_H - OFFSET;
+                handleScroll();
+            }, 150);
+        }
+
+        function inputToPicker(type, val) {
+            const num = parseFloat(val);
+            if (isNaN(num)) return;
+            
+            if (type === 'age') {
+                const v = Math.max(1, Math.min(120, Math.round(num)));
+                const targetPos = ((v - pickers['age'].min) + (pickers['age'].count * 2)) * ITEM_H - OFFSET;
+                pickers['age'].wrap.scrollTo({ top: targetPos, behavior: 'smooth' });
+            } else if (type === 'weight') {
+                const v = Math.max(1, Math.min(200, num));
+                const i = Math.floor(v), d = Math.round((v - i) * 10);
+                pickers['w-int'].wrap.scrollTo({ top: ((i - pickers['w-int'].min) + (pickers['w-int'].count * 2)) * ITEM_H - OFFSET, behavior: 'smooth' });
+                pickers['w-dec'].wrap.scrollTo({ top: ((d - pickers['w-dec'].min) + (pickers['w-dec'].count * 2)) * ITEM_H - OFFSET, behavior: 'smooth' });
+            } else if (type === 'scr') {
+                const v = Math.max(0.01, Math.min(15, num));
+                const i = Math.floor(v);
+                const d = Math.round((v * 100) % 100);
+                pickers['s-int'].wrap.scrollTo({ top: ((i - pickers['s-int'].min) + (pickers['s-int'].count * 2)) * ITEM_H - OFFSET, behavior: 'smooth' });
+                pickers['s-dec'].wrap.scrollTo({ top: ((d - pickers['s-dec'].min) + (pickers['s-dec'].count * 2)) * ITEM_H - OFFSET, behavior: 'smooth' });
+            }
+        }
+
+        const getW = () => parseFloat(`${wInt}.${wDec}`);
+        const getS = () => parseFloat(`${sInt}.${sDec < 10 ? '0'+sDec : sDec}`);
+
+        function updateDisplay(type) {
+            const input = document.getElementById(`val-${type}`);
+            if (document.activeElement === input) return; 
+            if (type === 'age') input.value = ageInt;
+            if (type === 'weight') input.value = getW().toFixed(1);
+            if (type === 'scr') input.value = getS().toFixed(2);
+        }
+
+        function setGender(g) {
+            gender = g;
+            document.getElementById('btn-male').className = `gender-btn ${g === 'male' ? 'active' : 'inactive'}`;
+            document.getElementById('btn-female').className = `gender-btn ${g === 'female' ? 'active' : 'inactive'}`;
+            calc();
+        }
+
+        function updateUI(egfr, crcl) {
+            const boxCrCl = document.getElementById('crcl-box');
+            const boxEgfr = document.getElementById('egfr-box');
+            const boxStage = document.getElementById('stage-box');
+            
+            const resultCrCl = document.getElementById('result-crcl');
+            const resultEgfr = document.getElementById('result-egfr');
+            const stageText = document.getElementById('stage-text');
+            const descText = document.getElementById('stage-desc');
+            
+            let stage = "", desc = "", bg = "", text = "", border = "";
+
+            if (egfr >= 90) {
+                stage = "1"; desc = "Normal"; 
+                bg = "#f0fdf4"; text = "#166534"; border = "#bbf7d0"; 
+            } else if (egfr >= 60) {
+                stage = "2"; desc = "Mild loss"; 
+                bg = "#dcfce7"; text = "#14532d"; border = "#86efac"; 
+            } else if (egfr >= 45) {
+                stage = "3a"; desc = "Mild-Mod"; 
+                bg = "#fefce8"; text = "#854d0e"; border = "#fde047"; 
+            } else if (egfr >= 30) {
+                stage = "3b"; desc = "Mod-Severe"; 
+                bg = "#fff7ed"; text = "#9a3412"; border = "#fdba74"; 
+            } else if (egfr >= 15) {
+                stage = "4"; desc = "Severe loss"; 
+                bg = "#fef2f2"; text = "#991b1b"; border = "#fca5a5"; 
+            } else {
+                stage = "5"; desc = "Failure"; 
+                bg = "#edb5ca"; text = "#991b1b"; border = "#e70459"; 
+            }
+
+            [boxCrCl, boxEgfr, boxStage].forEach(box => {
+                box.style.backgroundColor = bg;
+                box.style.borderColor = border;
+                box.style.color = text;
+            });
+
+            resultCrCl.innerText = crcl.toFixed(2);
+            resultEgfr.innerText = egfr.toFixed(2);
+            stageText.innerText = stage;
+            descText.innerText = desc;
+        }
+
+        function calc() {
+            const a = ageInt, w = getW(), s = getS();
+            if (s <= 0) return;
+            
+            let crcl = ((140 - a) * w) / (72 * s);
+            if (gender === 'female') crcl *= 0.85;
+
+            const kappa = (gender === 'female') ? 0.7 : 0.9;
+            const alpha = (gender === 'female') ? -0.241 : -0.302;
+            const genderFactor = (gender === 'female') ? 1.012 : 1.0;
+            const scrOverKappa = s / kappa;
+            const egfr = 142 * Math.pow(Math.min(scrOverKappa, 1), alpha) * Math.pow(Math.max(scrOverKappa, 1), -1.200) * Math.pow(0.9938, a) * genderFactor;
+            
+            updateUI(egfr, crcl);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
